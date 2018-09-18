@@ -9,6 +9,7 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
@@ -31,6 +32,12 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
     // 多指触摸时缩放比例
     private ScaleGestureDetector mScaleGestureDetector;
 
+    // 自由移动
+    private int mLastPointerCount;
+    private float mLastPointerCenterX, mLastPointerCenterY;
+    private boolean isCanDrag;
+    private int mTouchSlop;
+
     public SolarexZoomImageView(Context context) {
         this(context, null);
     }
@@ -46,6 +53,7 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
         mScaleMatrix = new Matrix();
         mScaleGestureDetector = new ScaleGestureDetector(context, this);
         setOnTouchListener(this);
+        mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
     }
 
     @Override
@@ -144,7 +152,88 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
     @Override
     public boolean onTouch(View v, MotionEvent event) {
         mScaleGestureDetector.onTouchEvent(event);
+
+        float pointerCenterX = 0.0f;
+        float pointerCenterY = 0.0f;
+
+        int pointerCount = event.getPointerCount();
+
+        for (int i = 0; i < pointerCount; i++) {
+            x += event.getX(i);
+            y += event.getY(i);
+        }
+        x /= pointerCount;
+        y /= pointerCount;
+
+        if (mLastPointerCount != pointerCount) {
+            isCanDrag = false;
+            mLastPointerCenterX = x;
+            mLastPointerCenterY = y;
+            mLastPointerCount = pointerCount;
+        }
+
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                break;
+            case MotionEvent.ACTION_MOVE:
+                float dx = x - mLastPointerCenterX;
+                float dy = y - mLastPointerCenterY;
+
+                if (!isCanDrag) {
+                    isCanDrag = isMoveAction(dx, dy);
+                }
+
+                if (isCanDrag) {
+                    RectF rectF = getMatrixRectF();
+                    if (getDrawable() != null) {
+                        if (rectF.width() < getWidth()) {
+                            dx = 0;
+                        }
+                        if (rectF.height() < getHeight()) {
+                            dy = 0;
+                        }
+                        mScaleMatrix.postTranslate(dx, dy);
+                        checkborderAndCenterWhenTranslate();
+                        setImageMatrix(mScaleMatrix);
+                    }
+                }
+                mLastPointerCenterX = x;
+                mLastPointerCenterY = y;
+                break;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                mLastPointerCount = 0;
+                break;
+        }
         return false;
+    }
+
+    private void checkborderAndCenterWhenTranslate() {
+        RectF rectF = getMatrixRectF();
+        float deltaX, deltaY;
+
+        int width = getWidth();
+        int height = getHeight();
+
+        if (rectF.top > 0 && rectF.height() >= height) {
+            deltaY = - rectF.top;
+        }
+        if (rectF.bottom < height && rectF.height() >= height) {
+            deltaY = height - rectF.bottom;
+        }
+        if (rectF.left > 0 && rectF.width() >= width) {
+            deltaX = -rectF.left;
+        }
+        if (rectF.right < width && rectF.width() >= width) {
+            deltaX = width - rectF.right;
+        }
+
+        mScaleMatrix.postTranslate(deltaX, deltaY);
+        setImageMatrix(mScaleMatrix);
+    }
+
+    private boolean isMoveAction(float dx, float dy) {
+        return Math.sqrt(dx * dx + dy * dy) > mTouchSlop;
     }
 
     private float getScale() {
@@ -182,11 +271,11 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
 
         // 如果放大或缩小后的宽度或高度小于控件的宽度或高度，进行居中处理
         if (rectF.width() < width) {
-            deltaX = width/2f - rectF.right + rectF.width()/2f;
+            deltaX = width / 2f - rectF.right + rectF.width() / 2f;
         }
 
         if (rectF.height() < height) {
-            deltaY = height/2f - rectF.bottom + rectF.height()/2f;
+            deltaY = height / 2f - rectF.bottom + rectF.height() / 2f;
         }
 
         mScaleMatrix.postTranslate(deltaX, deltaY);
