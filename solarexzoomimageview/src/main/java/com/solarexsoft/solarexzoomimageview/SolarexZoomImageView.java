@@ -232,8 +232,8 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
 
         mScaleGestureDetector.onTouchEvent(event);
 
-        float pointerCenterX = 0.0f;
-        float pointerCenterY = 0.0f;
+        float x = 0.0f;
+        float y = 0.0f;
 
         int pointerCount = event.getPointerCount();
 
@@ -303,7 +303,7 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
 
     private void checkborderAndCenterWhenTranslate() {
         RectF rectF = getMatrixRectF();
-        float deltaX, deltaY;
+        float deltaX = 0.0f, deltaY = 0.0f;
 
         int width = getWidth();
         int height = getHeight();
