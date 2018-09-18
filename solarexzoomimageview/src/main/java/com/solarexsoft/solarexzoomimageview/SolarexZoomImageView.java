@@ -160,8 +160,8 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
             }
 
             mInitScale = scale;
-            mMidScale = scale * 2;
-            mMaxScale = scale * 4;
+            mMidScale = scale * 20;
+            mMaxScale = scale * 40;
 
             // 将图片移动到控件中心
             float dx = width / 2 - dw / 2;
@@ -210,6 +210,7 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
             checkBorderAndCenterWhenScale();
             mScaleMatrix.postScale(scaleFactor, scaleFactor, detector.getFocusX(), detector
                     .getFocusY());
+            setImageMatrix(mScaleMatrix);
         }
         return true;
     }

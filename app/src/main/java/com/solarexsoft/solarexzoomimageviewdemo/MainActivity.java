@@ -1,5 +1,6 @@
 package com.solarexsoft.solarexzoomimageviewdemo;
 
+import android.content.Intent;
 import android.support.annotation.NonNull;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -48,6 +49,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean isViewFromObject(@NonNull View view, @NonNull Object object) {
                 return view == object;
+            }
+        });
+        findViewById(R.id.btn).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, SecondActivity.class);
+                startActivity(intent);
             }
         });
     }
