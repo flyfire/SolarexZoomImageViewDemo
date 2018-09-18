@@ -6,6 +6,7 @@ import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -38,6 +39,10 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
     private boolean isCanDrag;
     private int mTouchSlop;
 
+    // 双击放大
+    private GestureDetector mGestureDetector;
+    private boolean isAutoScale; // 正在进行双击放大缩小的操作
+
     public SolarexZoomImageView(Context context) {
         this(context, null);
     }
@@ -54,6 +59,74 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
         mScaleGestureDetector = new ScaleGestureDetector(context, this);
         setOnTouchListener(this);
         mTouchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        mGestureDetector = new GestureDetector(context, new GestureDetector
+                .SimpleOnGestureListener() {
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                // 若当前比例小于mMidScale放大到mMidScale，否则重置为mInitScale
+                // 缓慢放大和缩小
+                if (isAutoScale) {
+                    return true;
+                }
+                float x = e.getX();
+                float y = e.getY();
+
+                float scale = getScale();
+                if (scale < mMidScale) {
+                    postDelayed(new AutoScaleRunnable(mMidScale, x, y), 16);
+                    isAutoScale = true;
+                } else {
+                    postDelayed(new AutoScaleRunnable(mInitScale, x, y), 16);
+                    isAutoScale = true;
+                }
+                return true;
+            }
+        });
+    }
+
+    private class AutoScaleRunnable implements Runnable {
+        private float mTargetScale;
+        private float pivotX;
+        private float pivotY;
+
+        private final float BIGGER_FACTOR = 1.07f;
+        private final float SMALLER_FACTOR = 0.93f;
+
+        private float scaleFactor;
+
+        public AutoScaleRunnable(float targetScale, float pivotX, float pivotY) {
+            mTargetScale = targetScale;
+            this.pivotX = pivotX;
+            this.pivotY = pivotY;
+
+            float scale = getScale();
+            if (scale > mTargetScale) {
+                scaleFactor = SMALLER_FACTOR;
+            } else {
+                scaleFactor = BIGGER_FACTOR;
+            }
+        }
+
+        @Override
+        public void run() {
+            // 进行缩放
+            mScaleMatrix.postScale(scaleFactor, scaleFactor, pivotX, pivotY);
+            checkBorderAndCenterWhenScale();
+            setImageMatrix(mScaleMatrix);
+
+            float currentScale = getScale();
+            if ((scaleFactor > 1.0f && currentScale < mTargetScale) || (scaleFactor < 1.0f &&
+                    currentScale > mTargetScale)) {
+                postDelayed(this, 16);
+            } else {
+                float factor = mTargetScale / currentScale;
+                mScaleMatrix.postScale(factor, factor, pivotX, pivotY);
+                checkBorderAndCenterWhenScale();
+                setImageMatrix(mScaleMatrix);
+                isAutoScale = false;
+            }
+        }
     }
 
     @Override
@@ -151,6 +224,10 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
 
     @Override
     public boolean onTouch(View v, MotionEvent event) {
+        if (mGestureDetector.onTouchEvent(event)) {
+            return true; // 双击时不进行移动
+        }
+
         mScaleGestureDetector.onTouchEvent(event);
 
         float pointerCenterX = 0.0f;
@@ -216,7 +293,7 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
         int height = getHeight();
 
         if (rectF.top > 0 && rectF.height() >= height) {
-            deltaY = - rectF.top;
+            deltaY = -rectF.top;
         }
         if (rectF.bottom < height && rectF.height() >= height) {
             deltaY = height - rectF.bottom;
