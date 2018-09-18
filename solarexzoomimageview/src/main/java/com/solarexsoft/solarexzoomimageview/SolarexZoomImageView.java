@@ -5,12 +5,14 @@ import android.graphics.Matrix;
 import android.graphics.RectF;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.Nullable;
+import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.ViewParent;
 import android.view.ViewTreeObserver;
 import android.widget.ImageView;
 
@@ -248,11 +250,25 @@ public class SolarexZoomImageView extends ImageView implements ViewTreeObserver
             mLastPointerCenterY = y;
             mLastPointerCount = pointerCount;
         }
+        RectF sizeRect = getMatrixRectF();
+        int width = getWidth();
+        int height = getHeight();
 
+        ViewParent parent = getParent();
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                if (sizeRect.width() > width + 0.01 || sizeRect.height() > height + 0.01) {
+                    if (parent instanceof ViewPager) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                }
                 break;
             case MotionEvent.ACTION_MOVE:
+                if (sizeRect.width() > width + 0.01 || sizeRect.height() > height + 0.01) {
+                    if (parent instanceof ViewPager) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                }
                 float dx = x - mLastPointerCenterX;
                 float dy = y - mLastPointerCenterY;
 
