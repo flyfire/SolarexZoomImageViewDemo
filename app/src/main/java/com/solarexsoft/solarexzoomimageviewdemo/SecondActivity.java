@@ -4,7 +4,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 
-import com.solarexsoft.solarexzoomimageview.SolarexZoomImageView;
+import com.solarexsoft.solarexzoomimageview.SolarexZoomImageViewNew;
 
 /**
  * <pre>
@@ -18,7 +18,7 @@ public class SecondActivity extends AppCompatActivity {
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_second);
-        SolarexZoomImageView szi = findViewById(R.id.szi);
+        SolarexZoomImageViewNew szi = findViewById(R.id.szi);
         szi.setImageResource(R.mipmap.ic_launcher);
     }
 }
