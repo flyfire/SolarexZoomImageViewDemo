@@ -1,4 +1,5 @@
 apply plugin: 'com.android.library'
+apply plugin: 'com.novoda.bintray-release'
 
 android {
     compileSdkVersion 27
@@ -22,6 +23,10 @@ android {
         }
     }
 
+    lintOptions {
+        abortOnError false
+    }
+
 }
 
 dependencies {
@@ -31,4 +36,59 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+}
+
+//生成源文件
+task sourcesJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier = 'sources'
+}
+
+//生成Javadoc文档
+task javadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+}
+
+//文档打包成jar
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+//拷贝javadoc文件
+task copyDoc(type: Copy) {
+    from "${buildDir}/docs/"
+    into "docs"
+}
+
+//上传到JCenter所需要的源码文件
+artifacts {
+    archives javadocJar
+    archives sourcesJar
+}
+
+//解决 JavaDoc 中文注释生成失败的问题
+tasks.withType(Javadoc) {
+    options.addStringOption('Xdoclint:none', '-quiet')
+    options.addStringOption('encoding', 'UTF-8')
+    options.addStringOption('charSet', 'UTF-8')
+}
+
+
+Properties properties = new Properties()
+properties.load(project.rootProject.file('local.properties').newDataInputStream())
+
+publish {
+    artifactId = "solarexzoomimageview"
+    userOrg = "solarexsoft"
+    groupId = "com.solarexsoft"
+    uploadName = "SolarexZoomImageView"
+    publishVersion = "1.0.0"
+    desc = "ZoomImageView"
+    website = "https://solarex.github.io/projects"
+    repository = 'https://github.com/flyfire/SolarexZoomImageViewDemo'
+    licences = ['MIT']
+    bintrayUser = properties.getProperty("bintray.user")
+    bintrayKey = properties.getProperty("bintray.apikey")
 }
